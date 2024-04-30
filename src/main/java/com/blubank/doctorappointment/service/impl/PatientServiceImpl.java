@@ -1,7 +1,7 @@
 package com.blubank.doctorappointment.service.impl;
 
 import com.blubank.doctorappointment.dao.PatientRepository;
-import com.blubank.doctorappointment.model.Doctor;
+
 import com.blubank.doctorappointment.model.Patient;
 import com.blubank.doctorappointment.service.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,6 @@ public class PatientServiceImpl implements BaseService<Patient> {
     @Override
     public Patient update(Patient patient) {
         Patient lastPatient = findById(patient.getId());
-        lastPatient.setId(patient.getId());
         lastPatient.setFirstname(patient.getFirstname());
         lastPatient.setLastname(patient.getLastname());
         lastPatient.setPhoneNumber(patient.getPhoneNumber());

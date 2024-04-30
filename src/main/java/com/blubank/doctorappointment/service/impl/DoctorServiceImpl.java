@@ -24,7 +24,6 @@ public class DoctorServiceImpl implements BaseService<Doctor> {
     @Override
     public Doctor update(Doctor doctor) {
         Doctor lastDoctor = findById(doctor.getId());
-        lastDoctor.setId(doctor.getId());
         lastDoctor.setName(doctor.getName());
         return repository.save(lastDoctor);
     }

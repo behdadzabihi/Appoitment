@@ -1,14 +1,16 @@
 package com.blubank.doctorappointment.controller;
 
+import com.blubank.doctorappointment.common.PagingData;
 import com.blubank.doctorappointment.dto.AppointmentDTO;
 import com.blubank.doctorappointment.dto.DoctorDTO;
 import com.blubank.doctorappointment.mapper.AppointmentMapper;
 import com.blubank.doctorappointment.mapper.DoctorMapper;
 import com.blubank.doctorappointment.model.Appointment;
 import com.blubank.doctorappointment.model.Doctor;
-import com.blubank.doctorappointment.service.impl.AppointmentService;
+import com.blubank.doctorappointment.service.impl.AppointmentServiceImpl;
 import com.blubank.doctorappointment.service.impl.DoctorServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,25 +22,26 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
+@AllArgsConstructor
 public class DoctorRestController {
 
-    @Autowired
-    private AppointmentService appointmentService;
 
-    @Autowired
+    private AppointmentServiceImpl appointmentServiceImpl;
+
+
     private DoctorServiceImpl doctorService;
 
-    @Autowired
+
     private DoctorMapper doctorMapper;
 
-    @Autowired
+
     private AppointmentMapper appointmentMapper;
 
     @PostMapping("/appointments")
-    public ResponseEntity<Doctor> saveAppointment(@RequestBody DoctorDTO doctorDTO) {
-        Doctor doctor= doctorMapper.toV(doctorDTO);
+    public ResponseEntity<Doctor> create(@RequestBody DoctorDTO doctorDTO) {
+        Doctor doctor = doctorMapper.toDoctorDTOS(doctorDTO);
         doctorService.save(doctor);
-        return ResponseEntity.status(HttpStatus.CREATED).build() ;
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/{doctorId}/appointments")
@@ -46,7 +49,7 @@ public class DoctorRestController {
                                                 @RequestParam("startTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
                                                 @RequestParam("endTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
         try {
-            List<Appointment> appointments = appointmentService.createAppointments(doctorId, startTime, endTime);
+            List<Appointment> appointments = appointmentServiceImpl.createAppointments(doctorId, startTime, endTime);
             return ResponseEntity.ok(appointments);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -54,31 +57,47 @@ public class DoctorRestController {
     }
 
     @GetMapping("/{doctorId}/appointments/open")
-    public ResponseEntity<List<Appointment>> getOpenAppointments(@PathVariable Long doctorId) {
-        List<Appointment> openAppointments = appointmentService.getOpenAppointments(doctorId);
-        return ResponseEntity.ok(openAppointments);
+    public ResponseEntity<PagingData<AppointmentDTO>> getOpenAppointments(
+            @PathVariable Long doctorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagingData<AppointmentDTO> appointmentDTOPagingData=paging(appointmentServiceImpl, doctorId, page, size);
+        return ResponseEntity.ok(appointmentDTOPagingData);
     }
 
 
     @GetMapping("/{doctorId}/appointments/taken")
-    public ResponseEntity<List<Appointment>> getTakenAppointments(@PathVariable Long doctorId) {
-        List<Appointment> takenAppointments = appointmentService.getTakenAppointments(doctorId);
-        return ResponseEntity.ok(takenAppointments);
+    public ResponseEntity<PagingData<AppointmentDTO>> getTakenAppointments(
+            @PathVariable Long doctorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        PagingData<AppointmentDTO> appointmentDTOPagingData=paging(appointmentServiceImpl, doctorId, page, size);
+        return ResponseEntity.ok(appointmentDTOPagingData);
     }
 
     @DeleteMapping("/appointments/{appointmentId}")
     public ResponseEntity<?> deleteAppointment(@PathVariable Long appointmentId) {
         try {
-            appointmentService.deleteAppointment(appointmentId);
+            appointmentServiceImpl.deleteAppointment(appointmentId);
             return ResponseEntity.noContent().build();
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatus()).body(e.getReason());
         }
     }
+
     @PutMapping("/appointments/{appointmentId}")
     public ResponseEntity<AppointmentDTO> updatePatientAppointment(@RequestBody AppointmentDTO appointmentDTO) {
-        Appointment appointment=appointmentMapper.toV(appointmentDTO);
-        appointmentService.updateAppointment(appointment);
+        Appointment appointment = appointmentMapper.toAppointmentDTO(appointmentDTO);
+        appointmentServiceImpl.updateAppointment(appointment);
         return ResponseEntity.ok(appointmentDTO);
+    }
+    public PagingData<AppointmentDTO> paging(AppointmentServiceImpl appointmentService,Long doctorId,int page, int size){
+        Page<Appointment> appointmentPage=appointmentService.getOpenAppointments(doctorId, page, size);
+        int total=appointmentPage.getTotalPages();
+        List<Appointment> appointments=appointmentPage.getContent();
+        List<AppointmentDTO> appointmentDTOS=appointmentMapper.toAppointmentDTOS(appointments);
+        PagingData<AppointmentDTO> appointmentDTOPagingData=new PagingData<>(total,page,appointmentDTOS);
+        return appointmentDTOPagingData;
     }
 }

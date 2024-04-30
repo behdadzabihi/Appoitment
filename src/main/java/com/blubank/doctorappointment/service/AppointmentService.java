@@ -1,6 +1,7 @@
 package com.blubank.doctorappointment.service;
 
 import com.blubank.doctorappointment.model.Appointment;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,13 +11,15 @@ public interface AppointmentService {
 
     List<Appointment> createAppointments(Long doctorId, LocalDateTime startTime, LocalDateTime endTime);
 
-    List<Appointment> getOpenAppointments(Long doctorId);
+    Page<Appointment> getOpenAppointments(Long doctorId,int page,int size);
 
-    List<Appointment> getTakenAppointments(Long doctorId);
+    Page<Appointment> getTakenAppointments(Long doctorId,int page,int size);
 
     void deleteAppointment(Long appointmentId);
 
-    List<Appointment> findOpenAppointmentsForDay(Long doctorId, LocalDate day);
+    Page<Appointment> findOpenAppointmentsForDay(Long doctorId, LocalDate day,int page,int size);
 
-    List<Appointment> findAppointmentsByPatientPhoneNumber(String phoneNumber);
+    Appointment findAppointmentsByPatientPhoneNumber(String phoneNumber);
+
+    Appointment updateAppointment(Appointment appointment);
 }

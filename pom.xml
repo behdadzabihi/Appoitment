@@ -62,7 +62,10 @@
 			<artifactId>spring-security-oauth2-authorization-server</artifactId>
 			<version>0.2.3</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.ldap</groupId>
+			<artifactId>spring-ldap-core</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
@@ -101,7 +104,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.32</version> <!-- Use the latest version available -->
+			<version>1.7.32</version>
 		</dependency>
 
 	</dependencies>

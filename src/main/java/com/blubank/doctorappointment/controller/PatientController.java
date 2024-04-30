@@ -1,11 +1,16 @@
 package com.blubank.doctorappointment.controller;
 
+import com.blubank.doctorappointment.common.PagingData;
+import com.blubank.doctorappointment.dto.AppointmentDTO;
 import com.blubank.doctorappointment.dto.PatientDTO;
+import com.blubank.doctorappointment.mapper.AppointmentMapper;
 import com.blubank.doctorappointment.mapper.PatientMapper;
 import com.blubank.doctorappointment.model.Appointment;
 import com.blubank.doctorappointment.model.Patient;
-import com.blubank.doctorappointment.service.impl.AppointmentService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.blubank.doctorappointment.service.impl.AppointmentServiceImpl;
+import com.blubank.doctorappointment.service.impl.PatientServiceImpl;
+import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,32 +21,51 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/patients")
+@AllArgsConstructor
 public class PatientController {
-    @Autowired
-    private  AppointmentService appointmentService;
 
-    @Autowired
-    private PatientService patientService;
+    private AppointmentServiceImpl appointmentServiceImpl;
 
-    @Autowired
-    private PatientMapper mapper;
+
+    private PatientServiceImpl patientService;
+
+
+    private PatientMapper patientMapper;
+
+    private AppointmentMapper   appointmentMapper;
 
 
     @PostMapping("patients")
     public ResponseEntity<PatientDTO> save(@RequestBody PatientDTO patientDTO){
-        Patient patient = mapper.toPatient(patientDTO);
+        Patient patient = patientMapper.toPatientDTOS(patientDTO);
         patientService.save(patient);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/appointments/{doctorId}/{day}")
-    public ResponseEntity<List<Appointment>> getOpenAppointmentsForDay(@PathVariable Long doctorId, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day) {
-        List<Appointment> openAppointments = appointmentService.findOpenAppointmentsForDay(doctorId, day);
-        return ResponseEntity.ok(openAppointments);
+    public ResponseEntity<PagingData<AppointmentDTO>> getOpenAppointmentsForDay(@PathVariable Long doctorId, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day
+      ,@RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "10") int size) {
+        Page<Appointment> appointmentPage=appointmentServiceImpl.findOpenAppointmentsForDay(doctorId,day, page, size);
+        int total=appointmentPage.getTotalPages();
+        List<Appointment> appointments=appointmentPage.getContent();
+        List<AppointmentDTO> appointmentDTOS=appointmentMapper.toAppointmentDTOS(appointments);
+        PagingData<AppointmentDTO> appointmentDTOPagingData=new PagingData<>(total,page,appointmentDTOS);
+        return ResponseEntity.ok(appointmentDTOPagingData);
     }
     @GetMapping("/appointments")
-    public ResponseEntity<List<Appointment>> getPatientAppointments(@RequestParam String phoneNumber) {
-        List<Appointment> appointments = appointmentService.findAppointmentsByPatientPhoneNumber(phoneNumber);
-        return ResponseEntity.ok(appointments);
+    public ResponseEntity<AppointmentDTO> getPatientAppointments(@RequestParam String phoneNumber) {
+        Appointment appointment = appointmentServiceImpl.findAppointmentsByPatientPhoneNumber(phoneNumber);
+        AppointmentDTO appointmentDTO= appointmentMapper.toAppointmentDTO(appointment);
+        return ResponseEntity.ok(appointmentDTO);
+    }
+
+    public PagingData<AppointmentDTO> paging(AppointmentServiceImpl appointmentService, Long doctorId, int page, int size){
+        Page<Appointment> appointmentPage=appointmentService.getOpenAppointments(doctorId, page, size);
+        int total=appointmentPage.getTotalPages();
+        List<Appointment> appointments=appointmentPage.getContent();
+        List<AppointmentDTO> appointmentDTOS=appointmentMapper.toAppointmentDTOS(appointments);
+        PagingData<AppointmentDTO> appointmentDTOPagingData=new PagingData<>(total,page,appointmentDTOS);
+        return appointmentDTOPagingData;
     }
 }
